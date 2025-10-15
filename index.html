@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Мій список фільмів</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background-color: #f8f8f8;
+      }
+      h1 {
+        text-align: center;
+      }
+      form {
+        max-width: 500px;
+        margin: 0 auto 30px;
+        background: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+      input {
+        width: 100%;
+        margin: 5px 0 10px;
+        padding: 10px;
+        font-size: 16px;
+      }
+      button {
+        width: 100%;
+        padding: 10px;
+        font-size: 16px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        cursor: pointer;
+        border-radius: 6px;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 15px;
+        max-width: 800px;
+        margin: 0 auto 30px;
+      }
+      .item {
+        background: #fff;
+        padding: 10px;
+        text-align: center;
+        border-radius: 8px;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        position: relative;
+      }
+      .item img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 4px;
+      }
+      .title {
+        margin-top: 8px;
+        font-size: 14px;
+      }
+      .delete-btn {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: red;
+        border: none;
+        color: white;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        font-weight: bold;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .favorite {
+        border: 2px solid gold;
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+        transform: scale(1.03);
+      }
+      .fav-btn {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        background: gold;
+        border: none;
+        border-radius: 50%;
+        width: 26px;
+        height: 26px;
+        font-size: 16px;
+        cursor: pointer;
+      }
+      .fav-btn.off {
+        background: #ccc;
+      }
+
+      /* 🔹 Кнопка "Поділитися" */
+      .share-container {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .share-btn {
+        display: inline-block;
+        background: #28a745;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-size: 16px;
+        text-decoration: none;
+        cursor: pointer;
+        border: none;
+      }
+      .share-btn:hover {
+        background: #218838;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Мій список фільмів</h1>
+
+    <div class="share-container">
+      <button class="share-btn" id="shareBtn">📤 Поділитися цим сайтом</button>
+    </div>
+
+    <form id="movieForm">
+      <input type="text" id="title" placeholder="Назва фільму" required />
+      <input type="number" id="year" placeholder="Рік" required />
+      <input
+        type="url"
+        id="poster"
+        placeholder="Посилання на постер (URL)"
+        required
+      />
+      <button type="submit">Додати фільм</button>
+    </form>
+
+    <div class="grid" id="movieGrid"></div>
+
+    <script>
+      const form = document.getElementById("movieForm");
+      const grid = document.getElementById("movieGrid");
+      const shareBtn = document.getElementById("shareBtn");
+
+      let movies = JSON.parse(localStorage.getItem("movies")) || [];
+
+      function sortMovies() {
+        movies.sort((a, b) => b.year - a.year);
+      }
+
+      function renderMovies() {
+        sortMovies();
+        grid.innerHTML = "";
+        movies.forEach((movie, index) => {
+          const item = document.createElement("div");
+          item.classList.add("item");
+          if (movie.favorite) item.classList.add("favorite");
+
+          item.innerHTML = `
+            <button class="fav-btn ${
+              movie.favorite ? "" : "off"
+            }" onclick="toggleFavorite(${index})">★</button>
+            <button class="delete-btn" onclick="deleteMovie(${index})">×</button>
+            <img src="${movie.poster}" alt="${movie.title}">
+            <div class="title">${movie.title} (${movie.year})</div>
+          `;
+          grid.appendChild(item);
+        });
+      }
+
+      function toggleFavorite(index) {
+        movies[index].favorite = !movies[index].favorite;
+        localStorage.setItem("movies", JSON.stringify(movies));
+        renderMovies();
+      }
+
+      function deleteMovie(index) {
+        movies.splice(index, 1);
+        localStorage.setItem("movies", JSON.stringify(movies));
+        renderMovies();
+      }
+
+      renderMovies();
+
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        const title = document.getElementById("title").value.trim();
+        const year = parseInt(document.getElementById("year").value.trim());
+        const poster = document.getElementById("poster").value.trim();
+
+        if (title && year && poster) {
+          const movie = { title, year, poster, favorite: false };
+          movies.push(movie);
+          localStorage.setItem("movies", JSON.stringify(movies));
+          renderMovies();
+          form.reset();
+        }
+      });
+
+      // 🔹 Поділитися сайтом
+      shareBtn.addEventListener("click", async () => {
+        if (navigator.share) {
+          try {
+            await navigator.share({
+              title: "Мій список фільмів 🎬",
+              text: "Подивись мій список улюблених фільмів!",
+              url: window.location.href,
+            });
+          } catch (err) {
+            console.log("Користувач скасував дію або сталася помилка:", err);
+          }
+        } else {
+          // fallback для старих браузерів
+          alert("Скопіюй посилання для поділу: " + window.location.href);
+        }
+      });
+    </script>
+  </body>
+</html>
